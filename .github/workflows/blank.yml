@@ -1,0 +1,38 @@
+name: Deploy to AWS EC2 with Nginx
+
+on:
+  push:
+    branches:
+      - main  # Trigger deployment on pushes to the 'main' branch.
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Step 2: Set up SSH private key
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$AWS_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      # Step 3: Add EC2 host to known hosts
+      - name: Add EC2 instance to known hosts
+        run: |
+          ssh-keyscan -H 3.91.150.160 >> ~/.ssh/known_hosts
+
+      # Step 4: Copy the website files (index.html) to the EC2 instance
+      - name: Copy files to EC2
+        run: |
+          # Using SCP to copy index.html (or any file you want) to the EC2 instance
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa index.html ubuntu@your-ec2-public-ip:/var/www/html/
+
+      # Step 5: Restart Nginx to reflect changes
+      - name: Restart Nginx
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@your-ec2-public-ip "sudo systemctl restart nginx"
